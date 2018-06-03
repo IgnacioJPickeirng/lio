@@ -174,7 +174,7 @@ subroutine do_population_analysis()
    ! Performs Mulliken Population Analysis if required.
    if (mulliken) then
        call g2g_timer_start('Mulliken')
-       call mulliken_calc(natom, M, RealRho, Smat, Nuc, q)
+       call mulliken_calc(natom, M, RealRho, smat, Nuc, q)
        call write_population(85, natom, Iz, q, 0)
        call g2g_timer_stop('Mulliken')
    endif
@@ -182,7 +182,7 @@ subroutine do_population_analysis()
    ! Performs Löwdin Population Analysis if required.
    if (lowdin) then
        call g2g_timer_start('Lowdin')
-       call lowdin_calc(M, natom, RealRho, sqsm, Nuc, q)
+       call lowdin_calc(natom, M, RealRho, sqsm, Nuc, q)
        call write_population(85, natom, Iz, q, 1)
        call g2g_timer_stop('Lowdin')
    endif
