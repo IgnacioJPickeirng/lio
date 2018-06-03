@@ -143,7 +143,7 @@ end subroutine do_dipole
 ! Performs the different population analyisis available.                       !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%!
 subroutine do_population_analysis()
-   use garcha_mod, only : RMM, Smat, RealRho, M, Enucl, Nuc, Iz, natom, &
+   use garcha_mod, only : RMM, smat, RealRho, M, Enucl, Nuc, Iz, natom, &
                           mulliken, lowdin, sqsm, a, c, d, r, Iz, ncont, NORM,&
                           M, Md, nshell,ntatom
    use ECP_mod   , only : ecpmode, IzECP
@@ -189,7 +189,6 @@ subroutine do_population_analysis()
        enddo
        call g2g_timer_start('Lowdin')
        call lowdin_calc(natom, M, RealRho, sqsm, Nuc, q)
-       write(*,*) q
        call write_population(85, natom, Iz, q, 1)
        call g2g_timer_stop('Lowdin')
        q=0.0
