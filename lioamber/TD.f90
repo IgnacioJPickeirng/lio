@@ -304,12 +304,12 @@ subroutine TD(fock_aop, rho_aop, fock_bop, rho_bop)
       if (is_lpfrg) then
         ! bc= base change
          call td_bc_fock_cu(M_in,M, MM, RMM(M5), fock_aop, devPtrX,natom,      &
-                            nshell,ncont, istep,t/0.024190D0)
+                            nshell,ncont, istep, t/0.024190D0)
 
          if (OPEN) then
 
             call td_bc_fock_cu(M_in,M, MM, RMM(M3), fock_bop, devPtrX, natom,  &
-                               nshell,ncont, istep,t/0.024190D0)
+                               nshell,ncont, istep, t/0.024190D0)
             call td_verlet_cu(M, M_in, dim3, OPEN, fock_aop, rhold, rho_aop,   &
                               rhonew, istep, Im, dt_lpfrg, transport_calc,     &
                               natom, Nuc, Iz, overlap, sqsm, devPtrY,devPtrXc, &
@@ -353,10 +353,10 @@ subroutine TD(fock_aop, rho_aop, fock_bop, rho_bop)
 #else
       if (is_lpfrg) then
          call td_bc_fock(M_in, M, MM, RMM(M5), fock_aop,Xmat, natom, nshell,    &
-                         ncont, istep,t/0.024190D0)
+                         ncont, istep, t/0.024190D0)
          if (OPEN) then
             call td_bc_fock(M_in, M, MM, RMM(M3), fock_bop,Xmat, natom, nshell, &
-                            ncont, istep,t/0.024190D0)
+                            ncont, istep, t/0.024190D0)
 
             call td_verlet(M, M_in, dim3, OPEN, fock_aop, rhold, rho_aop,      &
                            rhonew, istep, Im, dt_lpfrg, transport_calc, natom, &
@@ -949,7 +949,7 @@ subroutine td_finalise_cublas(devPtrX, devPtrY, devPtrXc)
 end subroutine td_finalise_cublas
 
 subroutine td_bc_fock_cu(M_in,M, MM, RMM5, fock_op, devPtrX, natom, nshell,    &
-                         ncont, istep,time)
+                         ncont, istep, time)
    use dftb_data,        only:dftb_calc, MTB
    use dftb_subs,        only:chimeraDFTB_evol
    use fockbias_subs   , only: fockbias_apply
@@ -1143,6 +1143,7 @@ subroutine td_magnus_cu(M, dim3, OPEN,fock_aop, F1a, F1b, rho_aop, rhonew,     &
 !Fockbias is applied
    call fockbias_apply(time,fock(:,:,1)) 
 
+
    call g2g_timer_start('cupredictor')
    call cupredictor(F1a, F1b, fock, rho, devPtrX, factorial, devPtrXc, &
                     dt_magnus, time, M_in, MTB, dim3)
@@ -1186,7 +1187,7 @@ end subroutine td_magnus_cu
 #else
 
 subroutine td_bc_fock(M_in, M, MM, RMM5, fock_op, Xmm, natom, nshell,ncont,    &
-                      istep,time)
+                      istep, time)
 
    use dftb_data,        only:dftb_calc,MTB
    use dftb_subs,        only:chimeraDFTB_evol
