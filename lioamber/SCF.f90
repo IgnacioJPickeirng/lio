@@ -378,15 +378,18 @@ subroutine SCF(E)
         if (allocated(Y_min)) deallocate(Y_min)
         if (allocated(X_min_trans)) deallocate(X_min_trans)
         if (allocated(Y_min_trans)) deallocate(Y_min_trans)
-
+        if (allocated(sqsmat)) deallocate(sqsmat)
+        if (allocated(tmpmat)) deallocate(tmpmat)
+        if (allocated(Xmat)) deallocate(Xmat)
+        if (allocated(Ymat)) deallocate(Ymat)
         allocate(X_min(M,M), Y_min(M,M), X_min_trans(M,M), Y_min_trans(M,M))
-
-        if ( allocated(Xmat) ) deallocate(Xmat)
-        if ( allocated(Ymat) ) deallocate(Ymat)
+        allocate(sqsmat(M,M), tmpmat(M,M))
         allocate(Xmat(M_in,M_in), Ymat(M_in,M_in))
 
-        call overop%Sets_smat( Smat )
-        call overop%Gets_orthog_4m( 1, 0.0d0, X_min, Y_min, X_min_trans, Y_min_trans)
+        call overop%Sets_smat(smat)
+        call overop%Gets_orthog_4m(1, 0.0d0, X_min, Y_min, X_min_trans, Y_min_trans)
+        call overop%Gets_orthog_2m(2, 0.0d0, tmpmat, sqsmat)
+        deallocate(tmpmat)
 
 ! TODO: replace X,Y,Xtrans,Ytrans with Xmat, Ymat, Xtrp, Ytrp
 !        do ii=1,M
@@ -409,15 +412,11 @@ subroutine SCF(E)
 !
 !
 !  Fockbias setup
-        if ( allocated(sqsmat) ) deallocate(sqsmat)
-        if ( allocated(tmpmat) ) deallocate(tmpmat)
-        allocate( sqsmat(M,M), tmpmat(M,M) )
         !tmpmat and sqsmat should probably be equal on output, 
         !but for some reason they are not...?
-        call overop%Gets_orthog_2m( 2, 0.0d0, tmpmat, sqsmat )
-        call fockbias_loads( natom, nuc )
-        call fockbias_setmat( sqsmat  )
-        deallocate( sqsmat, tmpmat )
+        call fockbias_loads(natom, nuc)
+        call fockbias_setmat(sqsmat)
+        deallocate(sqsmat, tmpmat)
 
 
 !DFTB: Dimensions of Xmat and Ymat are modified for DFTB.

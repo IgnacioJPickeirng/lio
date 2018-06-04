@@ -46,11 +46,18 @@ subroutine fockbias_setup0( activate, do_shape, grow_start, fall_start, setamp )
    real*8 , intent(in) :: fall_start
    real*8 , intent(in) :: setamp
 
-   fockbias_is_active = activate
-   fockbias_is_shaped = do_shape
-   fockbias_timegrow  = grow_start
-   fockbias_timefall  = fall_start
-   fockbias_timeamp0  = setamp
+!   fockbias_is_active = activate
+!   fockbias_is_shaped = do_shape
+!   fockbias_timegrow  = grow_start
+!   fockbias_timefall  = fall_start
+!   fockbias_timeamp0  = setamp
+!Hardcoded variables
+   fockbias_is_active = T
+   fockbias_is_shaped = T
+   fockbias_timegrow  = 0.0
+   fockbias_timefall  = 0.0
+   fockbias_timeamp0  = 0.0
+
 
 end subroutine fockbias_setup0
 !
@@ -152,16 +159,15 @@ subroutine fockbias_loads( Natom, atom_of_orb, file_unit_in, file_name_in )
 
    else
       file_unit = 2427
+   endif
 
-      open( file=fockbias_readfile, unit=file_unit, iostat=ios )
-      if ( ios /= 0 ) then
-         print*, "Error inside fockbias_loads while opening input."
-         print*, "  file_name = ", fockbias_readfile
-         print*, "  file_unit = ", file_unit
-         print*, "  iostatus  = ", ios
-         print*; stop
-      end if
-
+   open( file=fockbias_readfile, unit=file_unit, iostat=ios )
+   if ( ios /= 0 ) then
+      print*, "Error inside fockbias_loads while opening input."
+      print*, "  file_name = ", fockbias_readfile
+      print*, "  file_unit = ", file_unit
+      print*, "  iostatus  = ", ios
+      print*; stop
    end if
 
 !  Now read all atomic weights and set it up.
