@@ -412,9 +412,8 @@ subroutine SCF(E)
 !
 !
 !  Fockbias setup
-        !tmpmat and sqsmat should probably be equal on output, 
-        !but for some reason they are not...?
-        call fockbias_loads(natom, nuc)
+        call fockbias_setup0(.true.,.false.,0.0,0.0,0.0)
+        call fockbias_loads(natom, nuc, 4333, "atombias")
         call fockbias_setmat(sqsmat)
         deallocate(sqsmat, tmpmat)
 
@@ -426,18 +425,14 @@ subroutine SCF(E)
 !       ("basis_size_dftb") according to the case
 
        if (dftb_calc) then
-
           call getXY_DFTB(M,X_min,Y_min,Xmat,Ymat)
-
        else
-
           do jj = 1, M
           do ii = 1, M
              Xmat(ii,jj) = X_min(ii,jj)
              Ymat(ii,jj) = Y_min(ii,jj)
           enddo
           enddo
-
       end if
 
 
@@ -613,7 +608,19 @@ subroutine SCF(E)
            call spunpack('L', M, RMM(M5), fock_a0)
         end if
 
-        call fockbias_apply( 0.0d0, fock_a0 )
+
+!this is the part where the bias is effectively applied,
+!the bias is applied in every step of the loop,
+!this is not exactly the best way to do it but it works
+        if (OPEN) then
+            call fockbias_apply( 0.0d0, fock_a0 )
+            call fockbias_apply( 0.0d0, fock_b0 )
+        else 
+            call fockbias_apply( 0.0d0, fock_a0 )
+        endif
+
+
+
 
 !------------------------------------------------------------------------------!
 ! DFTB: Fock and Rho for DFTB are builded.

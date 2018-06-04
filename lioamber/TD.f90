@@ -57,7 +57,7 @@ subroutine TD(fock_aop, rho_aop, fock_bop, rho_bop)
    use fileio        , only: write_td_restart_verlet, write_td_restart_magnus, &
                              read_td_restart_verlet , read_td_restart_magnus,  &
                              write_energies
-   use fileio_data   , only: verbose
+   use fileio_data     , only: verbose
    use typedef_operator, only: operator
 
 #ifdef CUBLAS
@@ -302,13 +302,14 @@ subroutine TD(fock_aop, rho_aop, fock_bop, rho_bop)
       call g2g_timer_sum_start("TD - Propagation")
 #ifdef CUBLAS
       if (is_lpfrg) then
+        ! bc= base change
          call td_bc_fock_cu(M_in,M, MM, RMM(M5), fock_aop, devPtrX,natom,      &
-                            nshell,ncont, istep)
+                            nshell,ncont, istep,t/0.024190D0)
 
          if (OPEN) then
 
             call td_bc_fock_cu(M_in,M, MM, RMM(M3), fock_bop, devPtrX, natom,  &
-                               nshell,ncont, istep)
+                               nshell,ncont, istep,t/0.024190D0)
             call td_verlet_cu(M, M_in, dim3, OPEN, fock_aop, rhold, rho_aop,   &
                               rhonew, istep, Im, dt_lpfrg, transport_calc,     &
                               natom, Nuc, Iz, overlap, sqsm, devPtrY,devPtrXc, &
@@ -352,10 +353,10 @@ subroutine TD(fock_aop, rho_aop, fock_bop, rho_bop)
 #else
       if (is_lpfrg) then
          call td_bc_fock(M_in, M, MM, RMM(M5), fock_aop,Xmat, natom, nshell,    &
-                         ncont, istep)
+                         ncont, istep,t/0.024190D0)
          if (OPEN) then
             call td_bc_fock(M_in, M, MM, RMM(M3), fock_bop,Xmat, natom, nshell, &
-                            ncont, istep)
+                            ncont, istep,t/0.024190D0)
 
             call td_verlet(M, M_in, dim3, OPEN, fock_aop, rhold, rho_aop,      &
                            rhonew, istep, Im, dt_lpfrg, transport_calc, natom, &
@@ -948,14 +949,16 @@ subroutine td_finalise_cublas(devPtrX, devPtrY, devPtrXc)
 end subroutine td_finalise_cublas
 
 subroutine td_bc_fock_cu(M_in,M, MM, RMM5, fock_op, devPtrX, natom, nshell,    &
-                         ncont, istep)
+                         ncont, istep,time)
    use dftb_data,        only:dftb_calc, MTB
    use dftb_subs,        only:chimeraDFTB_evol
+   use fockbias_subs   , only: fockbias_apply
    use typedef_operator, only:operator
    implicit none
    type(operator), intent(inout) :: fock_op
    integer  , intent(in)      :: M, MM, M_in
    integer*8, intent(in)      :: devPtrX
+   real*8   , intent(in)      :: time
    real*8   , intent(inout)   :: RMM5(MM)
    real*8 :: fock_0(M,M), fock(M_in,M_in)
    real*8 :: Xtemp(M_in,M_in)
@@ -972,6 +975,10 @@ subroutine td_bc_fock_cu(M_in,M, MM, RMM5, fock_op, devPtrX, natom, nshell,    &
    else
       fock=fock_0
    end if
+
+!Fockbias is applied
+   call fockbias_apply(time,fock) 
+
    call fock_op%Sets_data_AO(fock)
    call fock_op%BChange_AOtoON(devPtrX, M_in,'r')
    call fock_op%Gets_data_ON(fock)
@@ -1074,6 +1081,7 @@ subroutine td_magnus_cu(M, dim3, OPEN,fock_aop, F1a, F1b, rho_aop, rhonew,     &
    use dftb_data,        only: dftb_calc,MTB, rhold_AOTB, rhonew_AOTB
    use dftb_subs,        only: chimeraDFTB_evol
    use typedef_operator, only: operator
+   use fockbias_subs   , only: fockbias_apply
    implicit none
 
    type(operator), intent(inout)           :: fock_aop, rho_aop
@@ -1132,6 +1140,9 @@ subroutine td_magnus_cu(M, dim3, OPEN,fock_aop, F1a, F1b, rho_aop, rhonew,     &
       fock=fock_aux
    end if
 
+!Fockbias is applied
+   call fockbias_apply(time,fock(:,:,1)) 
+
    call g2g_timer_start('cupredictor')
    call cupredictor(F1a, F1b, fock, rho, devPtrX, factorial, devPtrXc, &
                     dt_magnus, time, M_in, MTB, dim3)
@@ -1175,11 +1186,12 @@ end subroutine td_magnus_cu
 #else
 
 subroutine td_bc_fock(M_in, M, MM, RMM5, fock_op, Xmm, natom, nshell,ncont,    &
-                      istep)
+                      istep,time)
 
    use dftb_data,        only:dftb_calc,MTB
    use dftb_subs,        only:chimeraDFTB_evol
    use typedef_operator, only:operator
+   use fockbias_subs   , only: fockbias_apply
    implicit none
    type(operator), intent(inout) :: fock_op
    integer, intent(in)    :: M, MM, M_in
@@ -1187,6 +1199,7 @@ subroutine td_bc_fock(M_in, M, MM, RMM5, fock_op, Xmm, natom, nshell,ncont,    &
    real*8 , allocatable   :: fock(:,:)
    real*8 , allocatable   :: Xtemp(:,:)
    real*8 , allocatable   :: fock_0(:,:)
+   real*8 , intent(in)    :: time
    integer, intent(in)  :: natom
    integer, intent(in)  :: ncont(M)
    integer, intent(in)  :: istep
@@ -1202,6 +1215,10 @@ subroutine td_bc_fock(M_in, M, MM, RMM5, fock_op, Xmm, natom, nshell,ncont,    &
    else
       fock=fock_0
    end if
+
+!Fockbias is applied
+   call fockbias_apply(time,fock)
+
 
    call fock_op%Sets_data_AO(fock)
    call fock_op%BChange_AOtoON(Xmm, M_in,'r')
